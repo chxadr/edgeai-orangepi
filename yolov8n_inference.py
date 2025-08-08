@@ -22,7 +22,7 @@ def task():
     x0_px = None
     y0_px = None
     
-    while not clib.sigint_received():
+    while not clib.kill_requested():
         
         size = ctypes.c_size_t()
         ptr_in = clib.get_latest_frame(ctypes.byref(size))
@@ -38,14 +38,14 @@ def task():
             print(f"[Error] Inference failed: {e}")
             break
 
-        # To display result on OrangePi screen
-        #try:
-        #    img = result.plot()
-        #    img_contig = np.ascontiguousarray(img)
-        #    ptr_out = img_contig.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
-        #    clib.display_frame(ptr_out, img.shape[1], img.shape[0], img.shape[2])
-        #except Exception as e:
-        #    print(f"[Error] Display failed: {e}")
+        # Uncomment the following to display result on OrangePi screen
+        ##try:
+        ##    img = result.plot()
+        ##    img_contig = np.ascontiguousarray(img)
+        ##    ptr_out = img_contig.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+        ##    clib.send_frame(ptr_out, img.shape[1], img.shape[0])
+        ##except Exception as e:
+        ##    print(f"[Error] Failed to send result: {e}")
 
         try:
             boxes = result.boxes

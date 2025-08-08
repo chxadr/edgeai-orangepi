@@ -22,14 +22,14 @@ clib.exit_clean.restype = None
 clib.thread_exit_ready.argtypes = []
 clib.thread_exit_ready.restype = None
 
-# bool sigint_received(void) signature
-clib.sigint_received.argtypes = []
-clib.sigint_received.restype = ctypes.c_bool
+# bool kill_requested(void) signature
+clib.kill_requested.argtypes = []
+clib.kill_requested.restype = ctypes.c_bool
 
-# void display_frame(uint8_t* data, int width, int height, int channels) signature
-clib.display_frame.argtypes = [ctypes.POINTER(ctypes.c_ubyte),
-                               ctypes.c_int, ctypes.c_int, ctypes.c_int]
-clib.display_frame.restype = None
+# void send_frame(uint8_t* data, int width, int height) signature
+clib.send_frame.argtypes = [ctypes.POINTER(ctypes.c_ubyte),
+                               ctypes.c_int, ctypes.c_int]
+clib.send_frame.restype = None
 
 # uint8_t* get_latest_frame(size_t* out_size) signature
 clib.get_latest_frame.argtypes = [ctypes.POINTER(ctypes.c_size_t)]
@@ -39,11 +39,11 @@ clib.get_latest_frame.restype = ctypes.POINTER(ctypes.c_ubyte)
 clib.free_frame.argtypes = [ctypes.POINTER(ctypes.c_ubyte)]
 clib.free_frame.restype = None
 
-# void send_abs_pos(d_px_t dx, d_px_t dy) signature
+# void send_abs_pos(d_px_t x, d_px_t y) signature
 clib.send_abs_pos.argtypes = [ctypes.c_int16, ctypes.c_int16]
 clib.send_abs_pos.restype = None
 
-# void circle(d_px_t r, uint8_t n_pts, time_us_t delay_us)
+# void circle_demo(d_px_t r, uint8_t n_pts, time_us_t delay)
 clib.circle_demo.argtypes = [ctypes.c_int16, ctypes.c_ubyte, ctypes.c_uint32]
 clib.circle_demo.restype = None
 
