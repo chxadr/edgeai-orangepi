@@ -8,7 +8,7 @@
  *
  * @note Uncomment statements commented with two pairs of dashes // ... //
  * to run the thread that displays inference results on screen.
- * Also modify ipc_elements.h, ipc_elements.cpp and yolov8n_inference.py
+ * Also modify ipc_elements.h, ipc_elements.c and yolov8n_inference.py
  * accordingly.
  *
  * @todo provide an easy way to display the results or not.
