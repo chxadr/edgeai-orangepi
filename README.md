@@ -32,7 +32,7 @@ I would like to thank [**Selva Systems**](https://selvasystems.net/), where I co
 
 ## System Overview
 
-The concept is to continuously capture images using a camera and send them through a detection model for inference. For each image, the model would identify which characters are present and outputs the position of any detected alien. These positions would be then used to control two stepper motors: one for the horizontal axis (X) and one for the vertical axis (Y), each equipped with a mirror to redirect a laser beam toward alien targets.
+The concept is to continuously **capture images using a camera** and send them through a **CNN-based detection model** for inference. For each image, the model would **identify which characters are present** and **outputs the position of any detected alien**. These positions would be then used to **control two stepper motors**: one for the horizontal axis (X) and one for the vertical axis (Y), each equipped with a **mirror to redirect a laser beam toward alien targets**.
 
 All components would be controlled programmatically, with the goal of achieving this functionality while consuming as little power as possible.
 
@@ -49,7 +49,17 @@ To meet these requirements, the device must offer enough computational power to 
 
 ### 📷 Camera
 
+We use a **2MP USB camera equipped with a 2.8-12mm lens and a variable focal length.** The focus is adjusted manually. The camera supports **MJPG capture mode at a resolution of 320×240 in which it can record at up to 120 frames per second.** Since many CNNs process images at resolutions that are multiples of 32×32, this camera will allow us to capture dataset images at a resolution of 224×224.
+
+**This resolution is well-suited for our application**, as the John and alien characters differ significantly in texture and color. Given that **we don't require more than 1mm precision** with the laser beam to reach the detected characters' centers, this resolution offers a good balance between accuracy and computational efficiency. **It will also help reduce the complexity of our model**, as the resolution of the training images directly affects the density of the network layers and sometimes the number of hyperparameters.
+
 ### 📟 Orange Pi Zero 3
+
+The [Orange Pi Zero 3](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-Zero-3.html) is a **compact, low-power, and versatile SBC** (50×55mm) featuring an Allwinner H618 Quad-core Cortex-A53 processor running at 1.5GHz, along with 4GB of LPDDR4 RAM. It includes two expansion interfaces with GPIOs and additional connectors (USB 2.0/3.0, SPI, I²C, UART), alongside pre-soldered connectors (USB 2.0, Micro HDMI, USB-C power supply). The board supports network connectivity via a Gigabit LAN port or Wi-Fi 5, and also features Bluetooth 5.0. Its overall power consumption can be kept under 5W while in use.
+
+We are using this board because the company already owns one. However, **it lacks the necessary computational power for lightweight deep learning networks.** Newer boards, such as the [Orange Pi 5](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-5.html) with Rockchip microcontrollers or the [Orange Pi RV2](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-RV2.html) featuring an 8-core RISC-V AI CPU, offer significantly more processing power. Despite their increased capabilities, their power consumption remains comparable to that of the [Orange Pi Zero 3](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-Zero-3.html) (5W-15W), especially considering the enhanced connectivity and hardware features they provide.
+
+To **enhance the performance of our SBC**, we integrated a [Coral USB Accelerator](https://coral.ai/products/accelerator). **This device adds a Google Edge TPU coprocessor to the system** via a USB 3.0 connection. **The Edge TPU is capable of performing 4 tera-operations per second (TOPS), consuming only 0.5 watts per TOPS (2 TOPS/W).** [This benchmark](https://coral.ai/docs/edgetpu/benchmarks/) presents the time per inference results for different AI models, both using the Quad-core Cortex-A53 CPU alone and in combination with the Edge TPU. As the benchmark shows, the gain in performance is impressive, though it can vary based on implementation (e.g., C++ vs Python) and factors like board load or how well the application is developed. Nonetheless, it gives us a strong indication of what to expect.
 
 ### 🔍 Detection Model
 
