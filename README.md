@@ -110,11 +110,11 @@ The application is launched through a Python script. **The C/C++ instructions ar
 
 ## Orange Pi Zero 3 Configuration
 
-Use Ubuntu 22.02 (Jammy) modified image available at <http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/service-and-support/Orange-Pi-Zero-3.html>
+We use the Ubuntu 22.02 (Jammy) modified image built on the kernel version 5.4.
 
 ### Time Synchronization
 
-System clock need to be synchronized for the OrangePi to access the Internet, for example to perform updates.
+System clock need to be synchronized for the Orange Pi to access the Internet, for example to perform updates.
 
 ```
 $ sudo systemctl enable chrony
@@ -122,21 +122,27 @@ $ sudo systemctl start chrony
 $ chronyc sources
 ```
 
-You will see mutliple NTP servers available. If you have `^?` under the column `MS`, of the output table, it means the OrangePi is not synchronized.
+You will see mutliple NTP servers available. If you see `^?` symbols under the column `MS` of the output table, it means the Orange Pi is not synchronized yet.
 
-Try to ping a server, here `pool.ntp.org` as an example:
+In that case, try to ping a server, here `pool.ntp.org` as an example:
 
 ```
 $ ping -c 3 pool.ntp.org
 ```
 
-Try all the server you have. If you cannot ping these servers, the OrangePi is likely not connected to a WAN. Try to reconnect to your network with your credentials. Then restart chrony:
+Try all the server you have. If you cannot ping these servers, the Orange Pi is likely to be not connected to a WAN. Try to reconnect to your network with your credentials. Then restart chrony:
 
 ```
 $ sudo systemctl restart chrony
 ```
 
-Wait a few seconds and run `chronyc sources` again. You should see symboles like:
+Wait a few seconds and run:
+
+```
+$ chronyc sources
+``` 
+
+You should see symboles like:
 
 - `^*`  current sync source
 - `^+`  good alternative
@@ -144,56 +150,69 @@ Wait a few seconds and run `chronyc sources` again. You should see symboles like
 
 ### SSH Configuration
 
-Assuming you want to use SSH with the default `orangepi` user through a local network where you (the client) and the OrangePi (the host) are connected. As `orangepi`, create the folder `~/.ssh` if not already existing, with a file `authorized_keys` inside the folder. We also need to give the right permissions 
+Assuming you want to use SSH with the default `orangepi` user through a local network where you (the client) and the Orange Pi (the host) are connected. As the `orangepi` user, create the folder `~/.ssh` if not already existing, and create a file `authorized_keys` inside it. We also need to update access permissions.
 
 ```
-$ mkldir ~/.ssh && chmod 700 ~/.ssh
+$ mkdir ~/.ssh && chmod 700 ~/.ssh
 $ cd ~/.ssh
 $ touch authorized_keys && chmod 600 authorized_keys
 ```
 
-Run `sudo systemctl status ssh`. If the service is not enabled, just type:
+Run: 
+
+```
+$ sudo systemctl status ssh
+```
+
+If the service is not enabled, just type:
 
 ```
 $ sudo systemctl enable ssh
 $ sudo systemctl restart ssh
 ```
 
-Open the SSH configuration file `/etc/ssh/sshd_config` with your editor of choice. You may need to modify the SSH port depending on your network firewall:
+Open the SSH configuration file `/etc/ssh/sshd_config` with your editor of choice. You may need to modify the SSH port depending on your network firewall. Just edit the following line:
 
-```
+```sh
 #Port 22
 ```
 
-22 is the default. Commented statement are the default ones. For now, ONLY change the port if needed. To apply the modification, first check for errors with `sudo sshd -t`.
+port 22 is the default. Generally speaking, commented statement are the default ones. For now, only change the port if needed. To apply the modification, first check for errors within the configuration file and then load the new configuration, using the following commands:
 
-Then run `sudo systemctl reload ssh` to load the new configuration.
+```
+$ sudo sshd -t
+$ sudo systemctl reload ssh
+```
 
-If you check the status of the SSH service, you will see it listens on the new port. You can confirm by checking the active sockets the user have access to by running `ss -unplat`.
+If you check the status of the SSH service, you will see it listens on the new port. You can confirm by checking the active sockets the user have access.
 
-On a client machine, generate a key:
+```
+$ ss -unplat
+```
+
+On a client machine, generate a key.
 
 ```
 > ssh-keygen -t rsa -b 2048
 ```
 
-RSA is well supported by the OrangePi. Now a small prompt will ask you where to put your pair of keys. Usually, best practice is to have your keys in one of these directories:
-- `/home/<username>/.ssh`    (most Unix systems like Linux distros, BSD distros and MAC)
+RSA is well supported by the Orange Pi. Now a small prompt will ask you where to put your pair of keys. Usually, best practice is to have your keys in one of these directories:
+- `/home/<username>/.ssh`    (UNIX)
 - `C:\Users\<username>\.ssh` (Windows)
 
-Feel free to give a nice name to the keys. After, you have to send the public key to the host, that is to say on OrangePi for the `orangepi` user. Find out the local IP address of the OrangePi:
+Feel free to give a nice name to the keys. After, you have to send the public key to the host, that is to say on the Orange Pi, for the `orangepi` user. Find out the local IP address of the Orange Pi first.
 
 ```
 $ ip a
 ```
 
-Try to connect with the password method first, to see if the setup works:
+Try to connect with the password method first, to see if the setup works.
 
 ```
 > ssh orangepi@<ip_addr> -p <port>
 ```
 
-You should see the following output if everything is ok:
+You should see the following output:
 
 ```
 The authenticity of host '[<ip_addr>]:1040 ([<ip_addr>]:<port>)' can't be established.
@@ -202,14 +221,14 @@ This key is not known by any other names.
 Are you sure you want to continue connecting (yes/no/[fingerprint])?
 ```
 
-Type `yes`. Now you need to type the `orangepi` user password.
+Type `yes`. Now you will be prompted to type the `orangepi` user password.
 
 ```
 Warning: Permanently added '[<ip_addr>]:<port>' (ED25519) to the list of known hosts.
 orangepi@<ip_addr>'s password:
 ```
 
-If it worked, you can see the welcom message from the OrangePi:
+If it worked, you can now see the welcom message from the Orange Pi.
 
 ```
   ___  ____ ___   _____             _____
@@ -228,29 +247,39 @@ Last login: Wed Jun 18 16:07:01 2025
 orangepi@orangepizero3:~$
 ```
 
-Logout from the OrangePi. On the client, **send the public key**, NOT THE PRIVATE. On UNIX systems you can do this in a single easy command:
+Logout from the Orange Pi. On the client, **send the public key, NOT THE PRIVATE**. On UNIX systems you can do this in a single easy command:
 
 ```
 > ssh-copy-id -i /path/to/key/<key_name>.pub "-oPort=<port>" orangepi@<ip_addr>
 ```
 
-On Windows, it's a bit longer. Connect in SSH with password **then copy the content of your PUBLIC KEY** and paste inside the host at `~/.ssh/authorized_keys`. The whole key MUST FIT on a single line. You could also copy paste using SSH commands, but it didn't worked for me ...
+On Windows, it's a bit longer. Connect in SSH with the `orangepi` user password **then copy the content of your PUBLIC KEY** and paste it inside the host inside `~/.ssh/authorized_keys`. **The whole key MUST FIT on a single line**.
 
-Finally, inside the folder where your key are placed, creat a `config` file and write the following lines:
+> [!TIP]
+> You can do this in a single command on Windows, using PowerShell
+>```
+>> type $env:USERPROFILE\path\to\<key_name>.pub | ssh -P <port> orangepi@<ip_addr> "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+>```
+
+Finally on the client, inside the folder where your key are placed, creat a `config` file and write the following lines:
 
 ```
 Host orangepi
 	HostName <ip_addr>
 	User orangepi
 	Port <port>
-	IdentityFile path/to/private/key/key_name
+	IdentityFile path/to/private/key_name
 ```
 
-So now if you want to connect, you can just type `ssh orangepi` !
+So now if you want to connect, you can just type:
+
+```
+> ssh orangepi
+```
 
 Last step is optional but better for security. On the host and inside `/etc/ssh/sshd_config` set `PasswordAuthentication no` and `PermitRootLogin no`, and make sure that you also have `PubkeyAuthentication yes`.
 
-Run these commands for the last time:*
+Run these commands for the last time:
 
 ```
 $ sudo sshd -t
@@ -261,11 +290,12 @@ Everything should be good now!
 
 ### OrangePi GPIO control
 
-> Warning: you need to execute program as root if `/dev/gpiomem` does not exist.
+> [!WARNING]
+> You need to execute programs using GPIOs as `root` if `/dev/gpiomem` does not exist, as it is the case on older kernel versions. Instead, GPIO management relies on sysfs.
 
-There is a library built in C langage for OrangePi boards, called [WiringOP](https://github.com/zhaolei/WiringOP), which allows us to interact with the board GPIO pins easely, with a synthax similar to the one employed in the Arduino framework.
+There is a library built in C langage for Orange Pi boards, called [WiringOP](https://github.com/zhaolei/WiringOP), which allows users to interact with the board GPIO pins easely, with a synthax similar to the one employed in the Arduino framework.
 
-It should be already installed within the OrangePi OS. To check it, just type:
+It should be already installed within the Orange Pi OS. To check it, just type:
 
 ```
 $ gpio -v
@@ -283,13 +313,13 @@ For details type: gpio -warranty
   *--> Orange Pi Zero 3
 ```
 
-Then you can list your available GPIO pins:
+Then you can list your available GPIO pins.
 
 ```
 $ gpio readall
 ```
 
-And see the output:
+And see the output.
 
 ```
  +------+-----+----------+--------+---+   H616   +---+--------+----------+-----+------+
@@ -317,9 +347,10 @@ And see the output:
  +------+-----+----------+--------+---+   H616   +---+--------+----------+-----+------+
 ```
 
-> Note: WiringOP is a modified WiringPi for OrangePi. For code documentation please visit the [WiringOP GitHub repository](https://github.com/WiringPi/WiringPi).
+> [!NOTE]
+> WiringOP is a modified WiringPi for OrangePi. For code documentation please visit the [WiringOP GitHub repository](https://github.com/WiringPi/WiringPi).
 
-Install the `libgpiod` library.
+If your system relies on sysfs to manage GPIOs, or if you want to run the application source code drom this repository, install the `libgpiod` library.
 
 ```
 $ sudo apt-get update
@@ -352,9 +383,9 @@ Create a udev rule file:
 $ sudo nano /etc/udev/rules.d/99-gpio.rules
 ```
 
-Add this content to set group `gpio` and permissions `660` on `/dev/gpiochip*` devices:
+Add this content to set group `gpio` authorization and permissions `660` on `/dev/gpiochip*` devices:
 
-```bash
+```sh
 KERNEL=="gpiochip*", SUBSYSTEM=="gpio", MODE="0660", GROUP="gpio"
 ```
 
@@ -380,10 +411,7 @@ crw-rw---- 1 root gpio 254, 1 Jun 25 13:00 /dev/gpiochip1
 
 ### PWM Setup
 
-If, for example, you want to use the PWM pins 3 and 4 for your project, you need to export them as `root` each time you boot the Orange Pi, using the following commands:
-
->[!NOTE]
-> Make sure the `orangepi` user is member of the `gpio` group.
+If for example you want to use the PWM pins 3 and 4 for your project, as we did, you need to export them as `root` each time you boot the Orange Pi, using the following commands:
 
 ```
 # echo 3 > /sys/class/pwm/pwmchip0/export
@@ -395,9 +423,9 @@ If, for example, you want to use the PWM pins 3 and 4 for your project, you need
 # chmod g+rw /sys/class/pwm/pwmchip0/pwm4/*
 ```
 
-To avoid doing this manually, you can create a one-shot root Systemd service. Edit a file `/etc/systemd/system/pwm-fix-perms.service` and put the following lines:
+To avoid doing this manually, you can create a one-shot `root` `systemd` service. Edit a file `/etc/systemd/system/pwm-fix-perms.service`.
 
-```service
+```
 [Unit]
 Description=Fix PWM permissions on boot
 After=multi-user.target
@@ -412,7 +440,10 @@ ExecStart=/bin/sh -c "echo 3 > /sys/class/pwm/pwmchip0/export && echo 4 > /sys/c
 WantedBy=multi-user.target
 ```
 
-Then reload Systemd and enable your service.
+>[!NOTE]
+> Make sure the `orangepi` user is member of the `gpio` group.
+
+Then reload `systemd` and enable your service.
 
 ```
 $ sudo systemctl daemon-reload
@@ -420,7 +451,13 @@ $ sudo systemctl enable pwm-fix-perms
 $ sudo systemctl start pwm-fix-perms
 ```
 
-By typing sudo systemctl status pwm-fix-perms, you should have an output similar to this:
+By typing:
+
+```
+$ sudo systemctl status pwm-fix-perms
+```
+
+you should have an output similar to this:
 
 ```
 ○ pwm-fix-perms.service - Fix PWM permissions on boot
@@ -445,14 +482,14 @@ Jul 08 15:19:55 orangepizero3 systemd[1]: Finished Fix PWM permissions on boot.
 
 ### OpenCV Installation
 
-Install OpenCV and dependencies
+Install the Open CV C++ library.
 
 ```
 $ sudo apt update
 $ sudo apt install -y libopencv-dev
 ```
 
-Check installed version:
+Check the installed version.
 
 ```
 $ pkg-config --modversion opencv4
@@ -461,8 +498,6 @@ $ pkg-config --modversion opencv4
 ### Google Coral TPU Setup
 
 #### Python Environment
-
-> Note: Make a Python environment per type of model you want to run. For example, MobileNetV2 and YOLOvX require different library versions.
 
 We need a Python environment in version 3.8 to match the libraries versions required to run inferences with the Google Coral TPU. To do so we first need to install Python 3.8. Problem is that it is quite old and we cannot access it the usual way. We are going to use *pyenv*.
 
@@ -482,28 +517,28 @@ $ sudo apt-get install -y \
 $ curl https://pyenv.run | bash
 ```
 
-Add *pyenv* to the load path by adding the following lines to `~/.bashrc` or `~/.zshrc`:
+Add *pyenv* to the load path by adding the following lines to the file that handles your environment variables, for instance inside `~/.bashrc` if you use Bash:
 
-```bash
+```sh
 export PATH="$HOME/.pyenv/bin:$PATH"
 eval "$(pyenv init --path)"
 eval "$(pyenv init -)"
 eval "$(pyenv virtualenv-init -)"
 ```
 
-Then restart your shell:
+Then load the changes.
 
 ```
 $ source ~/.bashrc
 ```
 
-Install Python 3.8:
+Install Python 3.8.
 
 ```
 $ pyenv install 3.8.18
 ```
 
-Create the virtual environment and activate it:
+Create the virtual environment and activate it. Here, the Python environment is named `py38`.
 
 ```
 $ pyenv virtualenv 3.8.18 py38
@@ -517,11 +552,15 @@ $ which python
 $ python --version
 ```
 
-In case you need to deactivate the Python environment, you can type ` pyenv deactivate`.
+In case you need to deactivate the Python environment, you can type:
+
+```
+$ pyenv deactivate
+```
 
 #### Packages for Google Coral TPU
 
-We are going to use a mixture of packages from both Debian-based system packet manager and `pip`.
+First add the Coral libraries keyrings to your package manager.
 
 ```
 $ echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" | sudo tee /etc/apt/sources.list.d/coral-edgetpu.list
@@ -536,38 +575,36 @@ Type the following command to install our first package:
 $ sudo apt-get install libedgetpu1-std
 ```
 
-> Note that the Edge TPU Compiler is not supported on ARM64 systems. So we do not install it, but it is still more reliable to pre-compile a model on a stronger desktop before giving it to the OrangePi.
-
 Then for the second package, we need to use our `py38` Python environment on Python 3.8. So we will use `pip` instead.
 
 ```
 $ pip install --extra-index-url https://google-coral.github.io/py-repo/ pycoral
 ```
 
-In `~/.bashrc` add the path to `LD_LIBRARY_PATH`:
+In your environment variables file, add the path to `LD_LIBRARY_PATH`:
 
-```bash
+```sh
 export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
 ```
 
-It should help to support TensorFlow Lite. Then run `source ~/.bashrc`.
+It should help to support TensorFlow Lite. Then run source it to apply the changes.
 
 #### USB bind to TPU
 
-Check if `orangepi` user is member of the `plugdev` group:
+Check if `orangepi` user is member of the `plugdev` group.
 
 ```
 $ groups
 ```
 
-If not, add `orangepi` user to `plugdev` then restart the shell:
+If not, add `orangepi` user to `plugdev`.
 
 ```
 $ sudo usermod -aG plugdev $USER
 $ newgrp plugdev
 ```
 
-Now just run `lsusb`. You should see the Google Coral TPU, if connected to the board:
+Now just run `lsusb`. You should see the Google Coral TPU if it is connected to the board:
 
 ```
 Bus 002 Device 003: ID 18d1:9302 Google Inc.
@@ -586,7 +623,7 @@ ID_VENDOR_ID=18d1
 ID_MODEL_ID=9302
 ```
 
-Create a Udev Rule with a new file for the Coral USB:
+Create a Udev rule with a new file for the Coral USB:
 
 ```
 $ sudo nano /etc/udev/rules.d/99-coral-usb.rules
@@ -685,9 +722,10 @@ Now everything should be ready.
 
 #### Run Pre-Compiled Models
 
-> Note: Make sure you are inside a different Python environment per type of model you want to run. For example, MobileNetV2 and YOLOvX require different library versions.
+> [!NOTE]
+> Make sure you are inside a different Python environment per type of model you want to run. For example, MobileNetV2 and YOLO models require different versions of Python and libraries.
 
-Now it is time to download and test an example.
+Now it is time to download and test some example.
 
 ##### MobileNetV2
 
@@ -758,6 +796,7 @@ import subprocess
 subprocess.run(["python", "inference_model.py"])
 ```
 
+> [!IMPORTANT]
 > We manually delete the interpreter and call the garbage collector to flush the TPU memory. Otherwise we might have issue running the program multiple times.
 
 Program output:
@@ -779,7 +818,7 @@ Ara macao (Scarlet Macaw): 0.75391
 
 ##### YOLOv8
 
-Install the package:
+Install the package.
 
 ```
 $ pip install ultralytics
