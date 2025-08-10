@@ -59,11 +59,54 @@ The [Orange Pi Zero 3](http://www.orangepi.org/html/hardWare/computerAndMicrocon
 
 We are using this board because the company already owns one. However, **it lacks the necessary computational power for lightweight deep learning networks.** Newer boards, such as the [Orange Pi 5](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-5.html) with Rockchip microcontrollers or the [Orange Pi RV2](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-RV2.html) featuring an 8-core RISC-V AI CPU, offer significantly more processing power. Despite their increased capabilities, their power consumption remains comparable to that of the [Orange Pi Zero 3](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-Zero-3.html) (5W-15W), especially considering the enhanced connectivity and hardware features they provide.
 
+#### Coral USB Accelerator
+
 To **enhance the performance of our SBC**, we integrated a [Coral USB Accelerator](https://coral.ai/products/accelerator). **This device adds a Google Edge TPU coprocessor to the system** via a USB 3.0 connection. **The Edge TPU is capable of performing 4 tera-operations per second (TOPS), consuming only 0.5 watts per TOPS (2 TOPS/W).** [This benchmark](https://coral.ai/docs/edgetpu/benchmarks/) presents the time per inference results for different AI models, both using the Quad-core Cortex-A53 CPU alone and in combination with the Edge TPU. As the benchmark shows, the gain in performance is impressive, though it can vary based on implementation (e.g., C++ vs Python) and factors like board load or how well the application is developed. Nonetheless, it gives us a strong indication of what to expect.
+
+#### Operating System
+
+The [Orange Pi Zero 3](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-Zero-3.html) is **compatible with modified versions of standard GNU/Linux distributions like Debian and Arch**, based on **kernel versions 5.4 or 6.1**. These **kernels are re-compiled to support hardware functionalities** such as PWM signal generation and serial communication. However, they are **not patched with the real-time branch**, which can limit priority handling.
+
+It is important to note that **even with the real-time kernel patch, strict real-time capabilities are not achievable**. This is because such operating systems are not designed for running a single specific application, but rather for a wide range of tasks. **Consequently, the use of hardware interrupts or timers is quite limited and not very efficient.** 
+
+Therefore, **one might consider using an external microcontroller** like an [ESP32](https://www.espressif.com/en/products/socs/esp32) to interact with the hardware, a choice we would have made if time had permitted after we discovered the limitiations of regular operating systems.
+
+Despite these limitations, the **provided GNU/Linux distributions are useful for running multithreaded applications and managing external devices** such as screens and SD card readers. They also offer the advantage of a **file system and the ability to create services** using `systemd`.
 
 ### 🔍 Detection Model
 
+We selected the [Ultralytics](https://www.ultralytics.com/) [YOLOv8n](https://docs.ultralytics.com/models/yolov8/) model as our **detection model**. This nano version of the YOLOv8 model is the **lightest and offers decent precision with real-time inference capabilities**. Its training pipeline is straightforward to implement, using the Python API, and includes **advanced data augmentation strategies** such as mosaic, enabling users to **train models even on small and incomplete datasets.**
+
+**YOLO** (*You Only Look Once*) **can detect multiple instances in a single frame by processing the image in a single forward pass**. For each frame, it predicts classes and bounding boxes along with their confidence scores. The model relies on a CNN backbone to extract spatial features from the image. The neck then prepares the feature maps for three different detection stages that process features of varying abstraction levels. The head of the network consists of these detection stages, which include two decoupled heads: one for class prediction and one for bounding box predictions. This eliminates the need for anchors in the split.
+
+**YOLO models have the ability to accept images of any dimension as input**, even though training is typically done on images of fixed size which influences the complexity of the network. This is achieved through a dedicated spatial pyramid pooling block that decomposes feature maps of various sizes into numerous subsamples of known fixed size.
+
+At the end of the training process, **users have the option to export the model in various formats, including the one compatible with Google Edge TPU**, which requires an `int8` quantized TensorFlow Lite format.
+
+Finally, **the model can be utilized using the Ultralytics Python API**, which notably handles the loading of the model into the [Coral USB Accelerator](https://coral.ai/products/accelerator) memory. It is worth noting that Ultralytics does not provide an official C++ API. We attempted to run our model within a C++ thread without success, so we opted to use a Python thread for the specific task of running inferences.
+
 ### 🔦 Laser Targeting
+
+We **redirect a laser beam toward detected aliens using two mirrors**, each one fixed to a NEMA 17 **stepper motor** driven by an A4988 controller. These motors have an angular resolution of 0.9°/step, which make them reasonably precise considering a target at 40cm from the light source, given the fact that the A4988 controllers offer the ability to configure the usage of microsteps (1/2, 1/4 and 1/8 of full step).
+
+It is worht mentionning that **stepper motors require a microcontroller which is able to generated PWM signals** to work properly. You could also generate your own PWM signal using hardware timers.
+
+Stepper motors can present **issues related to torque and manufacturing quality, often resulting in missed steps**. This can cause the system to lose precision over time, **leading to a discrepancy between the requested target coordinates and the actual position of the beam**. One potential solution is to gradually increase the motor speed when movement is required by linearly increasing the frequency of the PWM signal, a technique commonly referred to as **ramp control**. While ramp control can effectively manage torque, it **tends to slow down the system**.
+
+Another challenge is the **difficulty in controlling the number of steps on non-real-time operating systems**. These systems do not guarantee that a thread managing a PWM signal will resume precisely on time to stop the signal and achieve the exact number of steps, which can result in step jumps.
+
+**A more effective, albeit more expensive, alternative for controlling the mirrors would be to use galvanometer motors.**
+
+### 💽 Application
+
+The system's software has been developed as a **multithreaded application**:
+
+- 1× C++ thread using Open CV to capture frames from the camera;
+- 1× Python thread to run inference on the captured frames using the YOLOv8n model;
+- 2× C threads for controlling the two stepper motors;
+- 1× optional C++ thread for displaying the annoted frames from YOLOv8n on screen, featuring drawn colored bounding boxes.
+
+The application is launched through a Python script. **The C/C++ instructions are compiled into a dynamic library** that the Python script and thread can use to communicate with C/C++ threads.
 
 ## Orange Pi Zero 3 Configuration
 
