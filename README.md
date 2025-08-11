@@ -51,7 +51,7 @@ To meet these requirements, the device must offer enough computational power to 
 
 We use a **2MP USB camera equipped with a 2.8-12mm lens and a variable focal length.** The focus is adjusted manually. The camera supports **MJPG capture mode at a resolution of 320×240 in which it can record at up to 120 frames per second.** Since many CNNs process images at resolutions that are multiples of 32×32, this camera will allow us to capture dataset images at a resolution of 224×224.
 
-**This resolution is well-suited for our application**, as the John and alien characters differ significantly in texture and color. Given that **we don't require more than 1mm precision** with the laser beam to reach the detected characters' centers, this resolution offers a good balance between accuracy and computational efficiency. **It will also help reduce the complexity of our model**, as the resolution of the training images directly affects the density of the network layers and sometimes the number of hyperparameters.
+**This resolution is well-suited for our application**, as the John and alien characters differ significantly in texture and color. Given that **we require at least 5mm precision** with the laser beam to reach the detected characters' centers at 40cm, this resolution offers a good balance between accuracy and computational efficiency. **It will also help reduce the complexity of our model**, as the resolution of the training images directly affects the density of the network layers and sometimes the number of hyperparameters.
 
 ### 📟 Orange Pi Zero 3
 
@@ -87,7 +87,7 @@ Finally, **the model can be utilized using the Ultralytics Python API**, which n
 
 ### 🔦 Laser Targeting
 
-We **redirect a laser beam toward detected aliens using two mirrors**, each one fixed to a NEMA 17 **stepper motor** driven by an A4988 controller. These motors have an angular resolution of 0.9°/step, which make them reasonably precise considering a target at 40cm from the light source, given the fact that the A4988 controllers offer the ability to configure the usage of microsteps (1/2, 1/4 and 1/8 of full step).
+We **redirect a laser beam toward detected aliens using two mirrors**, each one fixed to a **stepper motor** driven by an A4988 controller. These motors have an angular resolution of 0.9°/step, which make them reasonably precise considering a target at 40cm from the light source, given the fact that the A4988 controllers offer the ability to configure the usage of microsteps (1/2, 1/4 and 1/8 of full step).
 
 It is worht mentionning that **stepper motors require a microcontroller which is able to generated PWM signals** to work properly. You could also generate your own PWM signal using hardware timers.
 
@@ -499,7 +499,7 @@ $ pkg-config --modversion opencv4
 
 #### Python Environment
 
-We need a Python environment in version 3.8 to match the libraries versions required to run inferences with the Google Coral TPU. To do so we first need to install Python 3.8. Problem is that it is quite old and we cannot access it the usual way. We are going to use *pyenv*.
+We require a Python 3.8 environment to align with the library versions necessary for running inferences with the Coral USB Accelerator. To achieve this, we first need to install Python 3.8, which is quite old and not accessible through standard methods. We will use *pyenv* for this purpose.
 
 Dependencies installation:
 
@@ -517,7 +517,7 @@ $ sudo apt-get install -y \
 $ curl https://pyenv.run | bash
 ```
 
-Add *pyenv* to the load path by adding the following lines to the file that handles your environment variables, for instance inside `~/.bashrc` if you use Bash:
+To add *pyenv* to your execution path and ensure it is initialized on boot, include the following lines in the file that manages your environment variables. For example, if you use Bash, you can add these lines to `~/.bashrc`:
 
 ```sh
 export PATH="$HOME/.pyenv/bin:$PATH"
@@ -552,13 +552,14 @@ $ which python
 $ python --version
 ```
 
-In case you need to deactivate the Python environment, you can type:
+> [!TIP]
+> If you need to deactivate the Python environment, you can type:
+>
+>```
+>$ pyenv deactivate
+>```
 
-```
-$ pyenv deactivate
-```
-
-#### Packages for Google Coral TPU
+#### Packages for Coral USB Accelerator
 
 First add the Coral libraries keyrings to your package manager.
 
@@ -575,7 +576,7 @@ Type the following command to install our first package:
 $ sudo apt-get install libedgetpu1-std
 ```
 
-Then for the second package, we need to use our `py38` Python environment on Python 3.8. So we will use `pip` instead.
+Then for the second package, we are going to use `pip`.
 
 ```
 $ pip install --extra-index-url https://google-coral.github.io/py-repo/ pycoral
@@ -587,9 +588,9 @@ In your environment variables file, add the path to `LD_LIBRARY_PATH`:
 export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
 ```
 
-It should help to support TensorFlow Lite. Then run source it to apply the changes.
+It should help to support TensorFlow Lite. Apply the changes with `source` as we did before.
 
-#### USB bind to TPU
+#### USB bind to Coral USB Accelerator
 
 Check if `orangepi` user is member of the `plugdev` group.
 
@@ -604,45 +605,40 @@ $ sudo usermod -aG plugdev $USER
 $ newgrp plugdev
 ```
 
-Now just run `lsusb`. You should see the Google Coral TPU if it is connected to the board:
+Now connect the Coral USB Accelerator to the Orange Pi and run `lsusb`. You will see one of the following output:
 
 ```
 Bus 002 Device 003: ID 18d1:9302 Google Inc.
 ```
 
-If you do not see `Google Inc` for now do not worry. You may see `Global Unichip Corp` instead. In that case please read carefully this section without executing anything yet. Otherwise, type the following command:
+or
 
 ```
-$ udevadm info --query=all --name=/dev/bus/usb/002/003
+Bus 001 Device 003: ID 1a6e:089a Global Unichip Corp.
 ```
 
-Where `002` and `003` refer to the previous output obtained with `lsusb`. Look for the following line:
+The issue where the Coral USB Accelerator is identified as a `Global Unichip Corp.` device instead of a `Google Inc.` device is likely due to the way the hardware components are recognized by the system. Global Unichip Corporation (GUC) is a company that provides ASIC (Application-Specific Integrated Circuit) design services, and it is possible that they were involved in the design or manufacturing of certain components used in the Coral USB Accelerator.
 
-```
-ID_VENDOR_ID=18d1
-ID_MODEL_ID=9302
-```
+To ensure seamless functionality of the Coral USB Accelerator, regardless of its identification name, we will establish two Udev rules. Please see part [Google Inc. Name](#google-inc-name) or part [Global Unichip Corp. Name](#global-unichip-corp-name) depending on your `lsusb` result.
 
-Create a Udev rule with a new file for the Coral USB:
+#### Google Inc. Name
 
-```
-$ sudo nano /etc/udev/rules.d/99-coral-usb.rules
-```
+Edit a `/etc/udev/rules.d/99-coral-usb.rules` file as `root` and add the following content.
 
-And add this single line:
-
-```bash
+```sh
 SUBSYSTEM=="usb", ATTR{idVendor}=="18d1", ATTR{idProduct}=="9302", MODE="0666", GROUP="plugdev"
 ```
 
-Makew sure the numbers match your own findings. Apply the rules by running:
+Where `"18d1"` and `"9302"` are the two part of the `Google Inc.` device identifier `ID 18d1:9302` displayed with `lsusb`.
+
+Apply the rule by running:
 
 ```
 $ sudo udevadm control --reload-rules
 $ sudo udevadm trigger
 ```
 
-To see if it works, type:
+To see if it works, type the following command according to the `Bus` and `Device` indexes seen with `lsusb`.
 
 ```
 $ ls -al /dev/bus/usb/002/003
@@ -654,7 +650,7 @@ If you have this output:
 crw-rw-rw- 1 root plugdev 189, 130 Jun 20 08:04 /dev/bus/usb/002/003
 ```
 
-It shows that it is working. Now unplug the Coral TPU, plug it back and run `lsusb`.
+It shows that it is working. Now unplug the Coral USB Accelerator, plug it back and run `lsusb`.
 
 If you have the following output:
 
@@ -662,43 +658,48 @@ If you have the following output:
 Bus 001 Device 006: ID 1a6e:089a Global Unichip Corp.
 ```
 
-Make another Udev Rule. It is a known other device refering to the Google Coral.
+Make the appropriated Udev rule for the `Global Unichip Corp.` device name (see part [Global Unichip Corp. Name](#global-unichip-corp-name)).
 
-```
-$ sudo nano /etc/udev/rules.d/99-unichip-usb.rules
-```
+#### Global Unichip Corp. Name
 
-And add this single line:
+Edit a `/etc/udev/rules.d/99-unichip-usb.rules` file as `root` and add the following content.
 
-```bash
+```sh
 SUBSYSTEM=="usb", ATTR{idVendor}=="1a6e", ATTR{idProduct}=="089a", MODE="0666", GROUP="plugdev"
 ```
-Makew sure the numbers match your own findings.
+
+Where `"1a6e"` and `"089a"` are the two part of the `Global Unichip Corp.` device identifier `ID 1a6e:089a` displayed with `lsusb`.
+
+Apply the rule by running:
 
 ```
 $ sudo udevadm control --reload-rules
 $ sudo udevadm trigger
 ```
 
-To see if it works, type:
+To see if it works, type the following command according to the `Bus` and `Device` indexes seen with `lsusb`.
 
 ```
-$ ls -al /dev/bus/usb/001/006
+$ ls -al /dev/bus/usb/002/003
 ```
 
-Plug and unplug, run `lsusb`.
+If you have this output:
 
 ```
-Bus 001 Device 007: ID 1a6e:089a Global Unichip Corp.
+crw-rw-rw- 1 root plugdev 189, 6 Jun 20 08:15 /dev/bus/usb/002/003
 ```
 
-Then if you have the following access rights:
+It shows that it is working. Now unplug the Coral USB Accelerator, plug it back and run `lsusb`.
+
+If you have the following output:
 
 ```
-crw-rw-rw- 1 root plugdev 189, 6 Jun 20 08:15 /dev/bus/usb/001/007
+Bus 001 Device 006: ID 1a6e:089a Google Inc.
 ```
 
-It should be good. You see that the access rights have been kept.
+Make the appropriated Udev rule for the `Google Inc.` device name (see part [Google Inc. Name](#google-inc-name)).
+
+#### Test
 
 Run this `test_lib.py` file.
 
@@ -718,7 +719,7 @@ You should have the following output:
 libedgetpu.so.1 loaded successfully
 ```
 
-Now everything should be ready.
+If not, try to unplug the Coral USB Accelerator, wait a few seconds and plug it back.
 
 #### Run Pre-Compiled Models
 
@@ -727,7 +728,7 @@ Now everything should be ready.
 
 Now it is time to download and test some example.
 
-##### MobileNetV2
+#### MobileNetV2
 
 Download the ressources.
 
@@ -797,7 +798,7 @@ subprocess.run(["python", "inference_model.py"])
 ```
 
 > [!IMPORTANT]
-> We manually delete the interpreter and call the garbage collector to flush the TPU memory. Otherwise we might have issue running the program multiple times.
+> We manually delete the interpreter and call the garbage collector to flush the Coral USB Accelerator memory. Otherwise we might have issue running the program multiple times. If the device is blocked, try to unplug it, wait a few seconds and plug it back.
 
 Program output:
 
@@ -816,7 +817,7 @@ Note: The first inference on Edge TPU is slow because it includes loading the mo
 Ara macao (Scarlet Macaw): 0.75391
 ```
 
-##### YOLOv8
+#### YOLOv8
 
 Install the package.
 
@@ -840,4 +841,4 @@ for i, img in enumerates(images):
     r[0].save(f"result{i}.jpg")
 ```
 
-You need to have a quantified model and images to run the prediction on, and that is it! Just run the program.
+You need to have a quantified model and images to run the prediction on.
