@@ -1,3 +1,6 @@
 [submodule "yoloxcoral"]
 	path = yoloxcoral
 	url = https://github.com/chxadr/yoloxcoral.git
+[submodule "humanxalien-dataset"]
+	path = humanxalien-dataset
+	url = https://github.com/chxadr/humanxalien-dataset.git
