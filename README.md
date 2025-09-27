@@ -41,7 +41,7 @@ All components would be controlled programmatically, with the goal of achieving 
 <br>
 <img src=assets/images/system.png  width=500>
 
-***Figure 1:** System block diagram.*
+***Figure 1:** System overview.*
 
 </div>
 
