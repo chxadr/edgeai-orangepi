@@ -114,7 +114,7 @@ We use the Ubuntu 22.02 (Jammy) modified image built on the kernel version 5.4.
 
 ### Time Synchronization
 
-System clock need to be synchronized for the Orange Pi to access the Internet, for example to perform updates.
+System clock need to be synchronized for the Orange Pi to access the Internet.
 
 ```
 $ sudo systemctl enable chrony
@@ -122,7 +122,7 @@ $ sudo systemctl start chrony
 $ chronyc sources
 ```
 
-You will see mutliple NTP servers available. If you see `^?` symbols under the column `MS` of the output table, it means the Orange Pi is not synchronized yet.
+You will see mutliple NTP servers available. Seeing the `^?` symbol under the column `MS` of the output table means the Orange Pi is not synchronized yet.
 
 In that case, try to ping a server, here `pool.ntp.org` as an example:
 
@@ -130,7 +130,7 @@ In that case, try to ping a server, here `pool.ntp.org` as an example:
 $ ping -c 3 pool.ntp.org
 ```
 
-Try all the server you have. If you cannot ping these servers, the Orange Pi is likely to be not connected to a WAN. Try to reconnect to your network with your credentials. Then restart chrony:
+Try all the server you have. If it fails, the Orange Pi is likely to be not connected to a WAN. Try to reconnect to your network with your credentials. Then restart chrony:
 
 ```
 $ sudo systemctl restart chrony
@@ -150,7 +150,7 @@ You should see symboles like:
 
 ### SSH Configuration
 
-Assuming you want to use SSH with the default `orangepi` user through a local network where you (the client) and the Orange Pi (the host) are connected. As the `orangepi` user, create the folder `~/.ssh` if not already existing, and create a file `authorized_keys` inside it. We also need to update access permissions.
+Assuming you want to use SSH with the default `orangepi` user through a local network where you (the client) and the Orange Pi (the host) are connected. As the `orangepi` user, create the folder `~/.ssh` if it does not already exist, and create a file `authorized_keys` inside. We also need to update access permissions.
 
 ```
 $ mkdir ~/.ssh && chmod 700 ~/.ssh
@@ -184,7 +184,7 @@ $ sudo sshd -t
 $ sudo systemctl reload ssh
 ```
 
-If you check the status of the SSH service, you will see it listens on the new port. You can confirm by checking the active sockets the user have access.
+If you check the status of the SSH service, you will see it listens on the new port. You can confirm that by checking the active sockets.
 
 ```
 $ ss -unplat
@@ -200,7 +200,7 @@ RSA is well supported by the Orange Pi. Now a small prompt will ask you where to
 - `/home/<username>/.ssh`    (UNIX)
 - `C:\Users\<username>\.ssh` (Windows)
 
-Feel free to give a nice name to the keys. After, you have to send the public key to the host, that is to say on the Orange Pi, for the `orangepi` user. Find out the local IP address of the Orange Pi first.
+Feel free to give a nice name to the keys. After, you have to send the public key to the host to be able to connect as the `orangepi` user. Find out the local IP address of the Orange Pi first.
 
 ```
 $ ip a
@@ -253,7 +253,7 @@ Logout from the Orange Pi. On the client, **send the public key, NOT THE PRIVATE
 > ssh-copy-id -i /path/to/key/<key_name>.pub "-oPort=<port>" orangepi@<ip_addr>
 ```
 
-On Windows, it's a bit longer. Connect in SSH with the `orangepi` user password **then copy the content of your PUBLIC KEY** and paste it inside the host inside `~/.ssh/authorized_keys`. **The whole key MUST FIT on a single line**.
+On Windows, connect via SSH with the `orangepi` user password **then copy the content of your PUBLIC KEY** and paste it inside the host inside `~/.ssh/authorized_keys`. **The whole key MUST FIT on a single line**.
 
 > [!TIP]
 > You can do this in a single command on Windows, using PowerShell
@@ -319,7 +319,7 @@ Then you can list your available GPIO pins.
 $ gpio readall
 ```
 
-And see the output.
+Here is an output example.
 
 ```
  +------+-----+----------+--------+---+   H616   +---+--------+----------+-----+------+
@@ -350,7 +350,7 @@ And see the output.
 > [!NOTE]
 > WiringOP is a modified WiringPi for OrangePi. For code documentation please visit the [WiringOP GitHub repository](https://github.com/WiringPi/WiringPi).
 
-If your system relies on sysfs to manage GPIOs, or if you want to run the application source code drom this repository, install the `libgpiod` library.
+If your system relies on sysfs to manage GPIOs, or if you want to run the application source code from this repository, install the `libgpiod` library.
 
 ```
 $ sudo apt-get update
@@ -841,4 +841,4 @@ for i, img in enumerates(images):
     r[0].save(f"result{i}.jpg")
 ```
 
-You need to have a quantified model and images to run the prediction on.
+You need to have a quantized model and images to run the prediction on.
